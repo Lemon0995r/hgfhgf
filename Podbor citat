@@ -1,0 +1,85 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+import random
+import json
+import os
+
+# 1. Список предопределенных цитат
+DEFAULT_QUOTES = [
+    {"text": "Жизнь — это то, что с тобой происходит, пока ты строишь планы.", "author": "Джон Леннон", "category": "Жизнь"},
+    {"text": "Единственный способ делать великие дела — любить то, что вы делаете.", "author": "Стив Джобс", "category": "Успех"},
+    {"text": "Быть или не быть, вот в чем вопрос.", "author": "Шекспир", "category": "Философия"},
+]
+
+class QuoteApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Random Quote Generator")
+        self.history_file = "history.json"
+        self.quotes = DEFAULT_QUOTES
+        self.history = self.load_history()
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        # Верхняя панель: Отображение цитаты
+        self.quote_label = tk.Label(self.root, text="Нажмите кнопку, чтобы получить цитату", 
+                                   wraplength=400, font=("Arial", 12, "italic"), pady=20)
+        self.quote_label.pack()
+
+        # Кнопка генерации
+        btn_gen = tk.Button(self.root, text="Сгенерировать цитату", command=self.generate_quote, bg="#4CAF50", fg="white")
+        btn_gen.pack(pady=10)
+
+        # Фильтры
+        filter_frame = tk.Frame(self.root)
+        filter_frame.pack(pady=5)
+        
+        tk.Label(filter_frame, text="Фильтр (Автор/Тема):").pack(side=tk.LEFT)
+        self.filter_entry = tk.Entry(filter_frame)
+        self.filter_entry.pack(side=tk.LEFT, padx=5)
+        
+        btn_filter = tk.Button(filter_frame, text="Применить", command=self.update_history_display)
+        btn_filter.pack(side=tk.LEFT)
+
+        # История (Список)
+        tk.Label(self.root, text="История:").pack()
+        self.history_listbox = tk.Listbox(self.root, width=70, height=10)
+        self.history_listbox.pack(padx=10, pady=5)
+        
+        self.update_history_display()
+
+    def generate_quote(self):
+        quote = random.choice(self.quotes)
+        self.quote_label.config(text=f"«{quote['text']}»\n— {quote['author']}")
+        
+        # Добавляем в историю
+        self.history.append(quote)
+        self.save_history()
+        self.update_history_display()
+
+    def update_history_display(self):
+        self.history_listbox.delete(0, tk.END)
+        search_query = self.filter_entry.get().lower()
+        
+        for q in reversed(self.history):
+            if search_query in q['author'].lower() or search_query in q['category'].lower():
+                display_text = f"[{q['category']}] {q['author']}: {q['text']}"
+                self.history_listbox.insert(tk.END, display_text)
+
+    def save_history(self):
+        with open(self.history_file, 'w', encoding='utf-8') as f:
+            json.dump(self.history, f, ensure_all_ascii=False, indent=4)
+
+    def load_history(self):
+        if os.path.exists(self.history_file):
+            try:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except: return []
+        return []
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = QuoteApp(root)
+    root.mainloop()
